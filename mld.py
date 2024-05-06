@@ -36,8 +36,6 @@ class MLD(object):
     def arrival_interval(self):
         return self.arr_itv_generator.get_itv()
 
-    def get_HOL_packet(self):
-        return self.pkts[0]
     
     def run(self):
         self.env.process(self.generate_pkts())
@@ -52,7 +50,7 @@ class MLD(object):
             self.allocating()
             
     def allocating(self):
-        if len(self.pkts_on_link) > 0:
+        if len(self.pkts) > 0:
             rv = random.uniform(0, 1)
             if rv < self.beta:
                 pkt = self.pkts.pop(0)
@@ -65,11 +63,19 @@ class MLD(object):
                 
     def try_connecting(self, linkid):
         while True:
-            with self.links[linkid].request() as req:
-                if not req.triggered:
-                    yield self.env.timeout(self.col_time)
+            if self.links[linkid].count == 0:
+                if len(self.pkts_on_link[linkid]) > 0:
+                    if self.bocs[linkid] == 0:
+                        with self.links[linkid].request() as req:
+                            if not req.triggered:
+                                yield self.env.timeout(self.col_time)
+                            else:
+                                yield self.env.timeout(self.suc_time)
+                    else:
+                        self.bocs[linkid] -= 1
                 else:
-                    yield self.env.timeout(self.suc_time)
+                    self.bocs[linkid] = self.bocs[linkid] - 1 if self.bocs[linkid] > 0 else 0
+                    
     
     def reset_bow(self, link_idx, flag = 0):
         if flag == 0:
