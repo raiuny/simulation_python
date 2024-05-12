@@ -3,11 +3,6 @@ import random
 from time import time
 import numpy as np
 from typing import List
-
-from packet import Pkt
-from arrival_model import ArrivalType
-
-from simpy.util import start_delayed
 from arrival_model import IntervalGeneratorFactory, ArrivalType
 from packet import Pkt
 import math
@@ -21,15 +16,24 @@ def parse_args():
     ap.add_argument("--nmld", type=int, default=10)
     ap.add_argument("--nsld1", type=int, default=0)
     ap.add_argument("--nsld2", type=int, default=0)
+    ap.add_argument("--sldW", type=int, default=16)
+    ap.add_argument("--sldK", type=int, default=6)
+    ap.add_argument("--mldW1", type=int, default=16)
+    ap.add_argument("--mldW2", type=int, default=16)
+    ap.add_argument("--mldK1", type=int, default=6)
+    ap.add_argument("--mldK2", type=int, default=6)
     return ap.parse_args()
 
 class Params(object):
     arrival_rate = 0.002 # per node per slot
     nlink = 2 # 2 links
     nmld = 10
-    nsld = 0
-    W = 256
-    K = 6 
+    nsld1 = 0
+    nsld2 = 0
+    mldW = 16
+    mldK = 6 
+    sldW = 16
+    sldK = 6
     sim_duration = 1e6
     queuing_time_link = [[] for _ in range(nlink)]
     access_time_link = [[] for _ in range(nlink)]
@@ -37,8 +41,8 @@ class Params(object):
     thpt_link = [0 for _ in range(nlink)]
     fin_counter = 0
     pkts_counter = 0
-    tt = 32
-    tf = 27
+    tt = 26
+    tf = 21
     beta = 1
 
 class MLD(object):
@@ -149,7 +153,12 @@ class System(object):
         for i in range(Params.nlink):
             self.links.append(simpy.Resource(self.env, capacity=1)) # 一般资源 先进先出
         for i in range(Params.nmld):
-            self.mlds.append(MLD(i, self.env, self.links, ArrivalType.BERNOULLI, Params.arrival_rate, Params.W, Params.K, Params.tt, Params.tf, beta = Params.beta))
+            self.mlds.append(MLD(i, self.env, self.links, ArrivalType.BERNOULLI, Params.arrival_rate, Params.mldW, Params.mldK, Params.tt, Params.tf, beta = Params.beta))
+        # SLD
+        for i in range(Params.nsld1):
+            self.mlds.append(MLD(i, self.env, self.links, ArrivalType.BERNOULLI, Params.arrival_rate, Params.sldW, Params.sldK, Params.tt, Params.tf, beta = 1))
+        for i in range(Params.nsld2):
+            self.mlds.append(MLD(i, self.env, self.links, ArrivalType.BERNOULLI, Params.arrival_rate, Params.sldW, Params.sldK, Params.tt, Params.tf, beta = 0))
         # 优先资源: PriorityResource 一般资源: Resource (FCFS)
             
     def run(self):
