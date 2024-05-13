@@ -31,8 +31,8 @@ class Params(object):
     nlink = 2 # 2 links
     beta = 0.5
     nmld = 10
-    nsld1 = 0
-    nsld2 = 0
+    nsld1 = 10
+    nsld2 = 10
     mldW = 16
     mldK = 6 
     sldW = 16
