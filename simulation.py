@@ -11,12 +11,12 @@ import argparse
 
 def parse_args():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--lam1", type=float, help="arrival rate of mld", default=0.002)
-    ap.add_argument("--lam2", type=float, help="arrival rate of sld", default=0.002)
+    ap.add_argument("--lam1", type=float, help="arrival rate of mld", default=0.0004)
+    ap.add_argument("--lam2", type=float, help="arrival rate of sld", default=0.0002)
     ap.add_argument("--beta", type=float, help="beta", default=0.5)
-    ap.add_argument("--nmld", type=int, default=10)
-    ap.add_argument("--nsld1", type=int, default=0)
-    ap.add_argument("--nsld2", type=int, default=0)
+    ap.add_argument("--nmld", type=int, default=20)
+    ap.add_argument("--nsld1", type=int, default=10)
+    ap.add_argument("--nsld2", type=int, default=10)
     ap.add_argument("--sldW", type=int, default=16)
     ap.add_argument("--sldK", type=int, default=6)
     ap.add_argument("--mldW1", type=int, default=16)
@@ -38,8 +38,8 @@ class Params(object):
     sldW = 16
     sldK = 6
     sim_duration = 1e6
-    tt = 36
-    tf = 28
+    tt = 32
+    tf = 27
     
     # MLD
     queueing_time_link = [[] for _ in range(nlink)]

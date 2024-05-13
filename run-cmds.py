@@ -5,7 +5,7 @@ cmd = "python simulation.py "
 
 # sld1 0.0002
 # sld2 0.0002
-# mld  0.0002
+# mld  0.0004
 tt = 32
 tf = 27
 nsld_total = 20
