@@ -11,7 +11,7 @@ import argparse
 
 def parse_args():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--lam1", type=float, help="arrival rate of mld", default=0.0004)
+    ap.add_argument("--lam1", type=float, help="arrival rate of mld", default=0.001)
     ap.add_argument("--lam2", type=float, help="arrival rate of sld", default=0.0002)
     ap.add_argument("--beta", type=float, help="beta", default=0.5)
     ap.add_argument("--nmld", type=int, default=20)
@@ -26,11 +26,11 @@ def parse_args():
     return ap.parse_args()
 
 class Params(object):
-    arrival_rate_mld = 0.004 # per node per slot
-    arrival_rate_sld = 0.002 # per node per slot
+    arrival_rate_mld = 0.001 # per node per slot
+    arrival_rate_sld = 0.0002 # per node per slot
     nlink = 2 # 2 links
     beta = 0.5
-    nmld = 10
+    nmld = 20
     nsld1 = 10
     nsld2 = 10
     mldW = 16
