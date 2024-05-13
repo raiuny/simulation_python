@@ -14,12 +14,12 @@ lam1 = 0.0002
 lam2 = 0.0002
 
 def run(cmd, lam1, lam2, nmld, nsld1, nsld2, beta, tt, tf):
-    log = f" > log-{lam1}-{lam2}-{nmld}-{nsld1}-{nsld2}-{beta}-{tt}-{tf}.txt 2>&1"
+    log = f" > ./log/log-{lam1}-{lam2}-{nmld}-{nsld1}-{nsld2}-{beta:.3f}-{tt}-{tf}.txt 2>&1"
     print(cmd + log)
-    os.system("ls")
+    os.system(cmd+log)
 
-with Pool(4) as pool:
-    for nsld1 in [2, 4, 6, 10]:
+with Pool(16) as pool:
+    for nsld1 in [2, 4, 6, 8, 10]:
         nsld2 = nsld_total - nsld1
         for beta in np.arange(0.1, 1.0, 0.01):
             cmd_run = cmd + f"--nsld1 {nsld1} --nsld2 {nsld2} --nmld {nmld} --lam1 0.0002 --lam2 0.0002 --beta {beta:.3f}"

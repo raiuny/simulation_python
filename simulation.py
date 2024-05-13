@@ -143,7 +143,7 @@ class MLD(object):
                                 Params.e2e_time_link_sld[linkid].append(pkt.dep_time - pkt.arr_time)
                                 Params.fin_counter += 1
                                 Params.thpt_link_sld[linkid] += 1
-                                Params.suc_link[linkid] += 1
+                                Params.suc_link_sld[linkid] += 1
                             else: # MLD
                                 Params.queueing_time_link[linkid].append(pkt.ser_time - pkt.arr_time) 
                                 Params.access_time_link[linkid].append(pkt.dep_time - pkt.ser_time)
@@ -254,6 +254,7 @@ class System(object):
                 print(Params.suc_link_sld[i] / (Params.suc_link_sld[i] + Params.col_link_sld[i]), end="\t")
         print()
         print(f"success transmit ratio: {Params.fin_counter / Params.pkts_counter :.4f}") 
+        print(f"weighted e2e delay of mld: {(np.mean(Params.e2e_time_link[0]) * Params.beta + np.mean(Params.e2e_time_link[1]) * (1-Params.beta))}")
 if __name__ == "__main__":
     begin = time()
     args = parse_args()
