@@ -140,7 +140,7 @@ class MLD(object):
                 if self.bocs[linkid] == 0:
                     with self.links[linkid].request() as req:
                         if not req.triggered:
-                            yield self.env.timeout(self.col_time)
+                            yield self.env.timeout(self.col_time-0.1)
                             self.reset_bow(linkid, 1)
                             self.reset_boc(linkid)
                             if self.env.now > Params.start_time:
@@ -151,21 +151,21 @@ class MLD(object):
                         else:
                             yield self.env.timeout(0.1)
                             if self.links[linkid].count > 1:
-                                yield self.env.timeout(self.col_time-0.1)
+                                yield self.env.timeout(self.col_time-0.2)
                                 self.reset_bow(linkid, 1)
                                 self.reset_boc(linkid)
                                 if self.env.now > Params.start_time:
                                     if self.type: # SLD
                                         Params.col_link_sld[linkid] += 1
                                     else:
-                                        Params.col_link[linkid] += 1
+                                        Params.col_link[linkid] += 1 
                             else:
-                                yield self.env.timeout(self.suc_time-0.1)
+                                yield self.env.timeout(self.suc_time-0.2)
                                 self.reset_bow(linkid, 0)
                                 self.reset_boc(linkid)
                                 # print(self.pkts_on_link)
                                 pkt = self.pkts_on_link[linkid].pop(0)
-                                pkt.dep_time = self.env.now
+                                pkt.dep_time = self.env.now + 0.1
                                 if self.env.now > Params.start_time:
                                     if self.type: # SLD
                                             Params.queueing_time_link_sld[linkid].append(pkt.ser_time - pkt.arr_time) 
@@ -185,23 +185,26 @@ class MLD(object):
                                             Params.suc_link[linkid] += 1
                                 if len(self.pkts_on_link[linkid]) > 0 and self.pkts_on_link[linkid][0].ser_time == -1:
                                     self.pkts_on_link[linkid][0].ser_time = self.env.now
+                    yield self.env.timeout(0.1) # 及时释放资源，避免冲突
                 else:
                     if self.links[linkid].count == 0:
                         yield self.env.timeout(0.1)
                         if self.links[linkid].count == 0:
                             self.bocs[linkid] -= 1
                         yield self.env.timeout(0.9)
+                        
                     else:
                         yield self.env.timeout(1)
                     
             else:
-                if self.links[linkid].count == 0:
-                    yield self.env.timeout(0.1)
-                    if self.links[linkid].count == 0:
-                        self.bocs[linkid] = self.bocs[linkid] - 1 if self.bocs[linkid] > 0 else 0
-                    yield self.env.timeout(0.9)
-                else:
-                    yield self.env.timeout(1)
+                # if self.links[linkid].count == 0:
+                #     yield self.env.timeout(0.1)
+                #     if self.links[linkid].count == 0:
+                #         self.bocs[linkid] = self.bocs[linkid] - 1 if self.bocs[linkid] > 0 else 0
+                #     yield self.env.timeout(0.9)
+                # else:
+                #     yield self.env.timeout(1)
+                yield self.env.timeout(1)
         
                     
     
@@ -297,7 +300,7 @@ class System(object):
             if (Params.suc_link[i] + Params.col_link[i]) == 0:
                 df[f"p of MLD on Link {i+1}"] = np.nan
             else:
-                df[f"p of MLD on Link {i+1}"] = np.nan
+                df[f"p of MLD on Link {i+1}"] = Params.suc_link[i] / (Params.suc_link[i] + Params.col_link[i])
         # print("\n(SLD)")
         for i in range(Params.nlink):
             if (Params.suc_link_sld[i] + Params.col_link_sld[i]) == 0:
@@ -314,7 +317,31 @@ class System(object):
         for i in range(Params.nlink):
              df[f"sec access delay of sld on Link {i}"] = np.mean(Params.access_time_sec_link_sld[0])
         return df
-        
+
+def clear_log():
+    nlink = Params.nlink
+    Params.queueing_time_link = [[] for _ in range(nlink)]
+    Params.access_time_link = [[] for _ in range(nlink)]
+    Params.access_time_sec_link = [[] for _ in range(nlink)]
+    Params.e2e_time_link = [[] for _ in range(nlink)]
+    Params.thpt_link = [0 for _ in range(nlink)]
+    Params.suc_link = [0 for _ in range(nlink)]
+    Params.col_link = [0 for _ in range(nlink)]
+    
+    
+    # SLD
+    Params.queueing_time_link_sld = [[] for _ in range(nlink)]
+    Params.access_time_link_sld = [[] for _ in range(nlink)]
+    Params.access_time_sec_link_sld = [[] for _ in range(nlink)]
+    Params.e2e_time_link_sld = [[] for _ in range(nlink)]
+    Params.thpt_link_sld = [0 for _ in range(nlink)]
+    Params.suc_link_sld = [0 for _ in range(nlink)]
+    Params.col_link_sld = [0 for _ in range(nlink)]
+    # total
+    Params.alpha_link = [0 for _ in range(nlink)]
+    Params.fin_counter = 0
+    Params.pkts_counter = 0
+    
 if __name__ == "__main__":
     begin = time()
     args = parse_args()
@@ -343,9 +370,11 @@ if __name__ == "__main__":
         end = time()
         df = sys.get_result()
         df = pd.DataFrame(df, index=[0])
+        clear_log()
         if i == 0:
             res = df
         else:
             res = pd.concat([res, df], ignore_index=True)
+        
     res.to_csv(Params.save_path)
     print(f"Total time: {end-begin:.4f} sec.")
