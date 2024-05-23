@@ -1,4 +1,4 @@
-from multiprocessing import Pool
+from multiprocessing import Pool, get_context
 import numpy as np
 import os
 cmd = "python simulation.py "
@@ -18,7 +18,7 @@ def run(cmd, lam1, lam21,lam22, nmld, nsld1, nsld2, beta, tt, tf):
     print(cmd + path)
     os.system(cmd + path)
 
-with Pool(8) as pool:
+with get_context("fork").Pool(8) as pool:
     for lam1 in np.arange(0.0002, 0.0034, 0.0002):
         cmd_run = cmd + f"--nsld1 {nsld1} --nsld2 {nsld2} --nmld {nmld} --lam1 {lam1} --lam21 {lam21} --lam22 {lam22} --beta {0.500} --mldW1 16 --rt 1000000"
         pool.apply_async(run, (cmd_run, lam1, lam21,lam22, nmld, nsld1, nsld2, 0.5, tt, tf))
