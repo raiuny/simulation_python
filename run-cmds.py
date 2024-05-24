@@ -21,7 +21,7 @@ def run(cmd, lam1, lam2, nmld, nsld1, nsld2, beta, tt, tf):
 with Pool(16) as pool:
     for nsld1 in [2, 4, 6, 8, 10]:
         nsld2 = nsld_total - nsld1
-        for beta in np.arange(0.1, 1.0, 0.01):
+        for beta in np.arange(0.01, 1.0, 0.02):
             cmd_run = cmd + f"--nsld1 {nsld1} --nsld2 {nsld2} --nmld {nmld} --lam1 0.0002 --lam2 0.0002 --beta {beta:.3f}"
             pool.apply_async(run, (cmd_run, lam1, lam2, nmld, nsld1, nsld2, beta, tt, tf))
     pool.close()
