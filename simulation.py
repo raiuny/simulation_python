@@ -135,35 +135,30 @@ class MLD(object):
         while True:
             itv = self.arrival_interval()
             yield self.env.timeout(itv)
-            begin = self.env.now
             self.pkt_num += 1
             pkt = Pkt(self.id, self.env.now,num=self.pkt_num)
             if self.env.now > Params.start_time:
                 Params.pkts_counter += 1
             self.allocating(pkt)
-            end = self.env.now 
-            assert end - begin < 0.01, f"{begin}-{end}"
             
     def allocating(self, pkt):
-            rv = random.uniform(0, 1)
-            if rv < self.beta:
-                self.pkts_on_link[0].append(pkt)
-                if self.pkts_on_link[0][0].ser_time == -1:
-                    self.pkts_on_link[0][0].ser_time = self.env.now
-            else:
-                self.pkts_on_link[1].append(pkt)
-                if self.pkts_on_link[1][0].ser_time == -1:
-                    self.pkts_on_link[1][0].ser_time = self.env.now
-            
-            
-                        
+        rv = random.uniform(0, 1)
+        if rv < self.beta:
+            self.pkts_on_link[0].append(pkt)
+            if self.pkts_on_link[0][0].ser_time == -1:
+                self.pkts_on_link[0][0].ser_time = self.env.now
+        else:
+            self.pkts_on_link[1].append(pkt)
+            if self.pkts_on_link[1][0].ser_time == -1:
+                self.pkts_on_link[1][0].ser_time = self.env.now
+                    
     def try_connecting(self, linkid):
         while True:
             if len(self.pkts_on_link[linkid]) > 0:
                 assert self.pkts_on_link[linkid][0].ser_time!=-1, "HOL包无开始服务的时间"
                 if self.bocs[linkid] == 0:
                     yield self.env.timeout(0.5)
-                    if Params.sfcs[linkid] == 0:
+                    if Params.sfcs[linkid].get_value() == 0:
                         yield self.env.timeout(0.5)
                         Params.sfcs[linkid].increment()
                         yield self.env.timeout(0.5)
@@ -175,21 +170,23 @@ class MLD(object):
                             pkt.dep_time = self.env.now
                             if self.env.now > Params.start_time:
                                 if self.type: # SLD
-                                        Params.queueing_time_link_sld[linkid].append(pkt.ser_time - pkt.arr_time) 
-                                        Params.access_time_link_sld[linkid].append(pkt.dep_time - pkt.ser_time)
-                                        Params.access_time_sec_link_sld[linkid].append((pkt.dep_time - pkt.ser_time)**2)
-                                        Params.e2e_time_link_sld[linkid].append(pkt.dep_time - pkt.arr_time)
-                                        Params.fin_counter += 1
-                                        Params.thpt_link_sld[linkid] += 1
-                                        Params.suc_link_sld[linkid] += 1
+                                    Params.queueing_time_link_sld[linkid].append(pkt.ser_time - pkt.arr_time) 
+                                    Params.access_time_link_sld[linkid].append(pkt.dep_time - pkt.ser_time)
+                                    Params.access_time_sec_link_sld[linkid].append((pkt.dep_time - pkt.ser_time)**2)
+                                    Params.e2e_time_link_sld[linkid].append(pkt.dep_time - pkt.arr_time)
+                                    Params.fin_counter += 1
+                                    Params.thpt_link_sld[linkid] += 1
+                                    Params.suc_link_sld[linkid] += 1
                                 else: # MLD
-                                        Params.queueing_time_link[linkid].append(pkt.ser_time - pkt.arr_time) 
-                                        Params.access_time_link[linkid].append(pkt.dep_time - pkt.ser_time)
-                                        Params.access_time_sec_link[linkid].append((pkt.dep_time - pkt.ser_time)**2)
-                                        Params.e2e_time_link[linkid].append(pkt.dep_time - pkt.arr_time)
-                                        Params.fin_counter += 1
-                                        Params.thpt_link[linkid] += 1
-                                        Params.suc_link[linkid] += 1
+                                    Params.queueing_time_link[linkid].append(pkt.ser_time - pkt.arr_time) 
+                                    Params.access_time_link[linkid].append(pkt.dep_time - pkt.ser_time)
+                                    Params.access_time_sec_link[linkid].append((pkt.dep_time - pkt.ser_time)**2)
+                                    Params.e2e_time_link[linkid].append(pkt.dep_time - pkt.arr_time)
+                                    Params.fin_counter += 1
+                                    Params.thpt_link[linkid] += 1
+                                    Params.suc_link[linkid] += 1
+                            if len(self.pkts_on_link[linkid]) > 0 and self.pkts_on_link[linkid][0].ser_time == -1:
+                                self.pkts_on_link[linkid][0].ser_time = self.env.now
                         else: # 冲突
                             yield self.env.timeout(self.col_time-1.5)
                             self.reset_bow(linkid, 1)
@@ -199,14 +196,9 @@ class MLD(object):
                                     Params.col_link_sld[linkid] += 1
                                 else:
                                     Params.col_link[linkid] += 1
+                        Params.sfcs[linkid].decrement()
                     else:
                         yield self.env.timeout(0.5)
-                                    
-                    yield self.env.timeout(0.05)
-                    del req
-                    if self.links[linkid].count != 0:
-                        print(self.links[linkid].count, self.env.now, self.id, "ERROR")
-                    yield self.env.timeout(0.05) # 及时释放资源，避免冲突
                 else:
                     yield self.env.timeout(0.5)
                     if Params.sfcs[linkid].get_value() == 0:
@@ -214,8 +206,8 @@ class MLD(object):
                         yield self.env.timeout(0.5)
                     else:
                         yield self.env.timeout(0.5)
-                    
             else:
+                # print(self.env.now, self.id, "空队列", Params.sfcs[linkid].get_value())
                 yield self.env.timeout(1)
         
                     
@@ -258,9 +250,9 @@ class System(object):
     def step_process(self, i):
         while True:
             if self.env.now > Params.start_time:
-                if self.links[i].count == 0:
+                if Params.sfcs[i].get_value() == 0:
                     yield self.env.timeout(0.1)
-                    if self.links[i].count == 0:
+                    if Params.sfcs[i].get_value() == 0:
                         Params.alpha_link[i] += 1
                     yield self.env.timeout(0.9)
                 else:
